@@ -1,11 +1,10 @@
 from settings import *
 
-class Object:
+from object.rooted_object import RootedObject
+
+class Object(RootedObject):
     def __init__(self, position: Vector2, mass: int,  radius: int, color: Color):
-        self.position = position
-        self.mass = mass
-        self.radius = radius
-        self.color = color
+        super().__init__(position, mass, radius, color)
 
         self.velocity: Vector2 = vector2_zero()
         self.acceleration: Vector2 = vector2_zero()
@@ -14,11 +13,11 @@ class Object:
         F_net = vector2_zero()
         for other in others:
             if other is not self:
-                dist = vector2_distance(self.position, other.position) * SCALE_FACTOR
+                d2 = vector2_distance_sqr(self.position, other.position)
                 theta = -vector2_line_angle(self.position, other.position)
 
                 try:
-                    F_obj = Vector2((self.mass * other.mass) / (dist ** 2), 0)
+                    F_obj = Vector2((self.mass * other.mass) / d2, 0)
                 except ZeroDivisionError:
                     F_obj = vector2_zero()
                 
@@ -31,9 +30,20 @@ class Object:
 
     def update(self):
         self.position = vector2_add(self.position, self.velocity)
+
+        # keep objects contained within screen
+        if self.position.x < -self.radius / 2:
+            self.position.x = SCREEN_WIDTH + self.radius / 2
+        elif self.position.x > SCREEN_WIDTH + self.radius / 2:
+            self.position.x = -self.radius / 2
+        
+        if self.position.y < -self.radius / 2:
+            self.position.y = SCREEN_HEIGHT + self.radius / 2
+        elif self.position.y > SCREEN_HEIGHT + self.radius / 2:
+            self.position.y = -self.radius / 2
     
     def draw(self, debug: bool):
-        draw_circle_v(self.position, self.radius, self.color)
+        super().draw(debug)
         
         if debug:
             draw_line_v(self.position, vector2_add(self.position, vector2_scale(self.velocity, 100)), MAROON)
